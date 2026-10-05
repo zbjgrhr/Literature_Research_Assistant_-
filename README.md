@@ -1,12 +1,14 @@
-# Web Timer + Translate + Notes / 网页计时 · 翻译 · 笔记 · 生词本
+# Literature Research Assistant / 文献查阅辅助工具
 
 Cross-browser extension (Chrome / Edge / Firefox MV3) with:
 
 - **Timer** — red **Timer / 计时** FAB; countdown badge top-right; flashes at **3 / 2 / 1 minutes**; on expire: **bell chime** + full-page overlay **时间到！ / Time's up!** (close button only); tab stays open by default
 - **Translate** — select text, highlight (multi-color, per-page persistence), translate (free MyMemory with detected source language, LibreTranslate, or Google/DeepL)
+- **Literature search / 文献检索** — search Google Scholar, Semantic Scholar, PubMed, or arXiv by topic, paper title, DOI, author, or quotation; optional review/open-access/methodology lenses
 - **Vocabulary & Sentences (生词本 / 生句本)** — save words/sentences with label, remark, bilingual text, and source page URL
 - **Notes** — **Note / 笔记** FAB opens a **right-side panel** (below the timer badge, non-modal); drag title to move; drag **edges/corners** to resize; **↺** or double-click title to reset layout; page stays selectable for copy/paste
-- **In-page panel** — click the extension icon to open a **Shadow DOM** panel fixed at the **top-right** (immune to site CSS on `.tab`, `.panel`, etc.)
+- **Reliable toolbar popup** — click the extension icon to open Research, Timer, Notes, Vocab, Sentences, and Settings even when the current page cannot accept injected scripts
+- **In-page panel** — the Shadow DOM top-right panel remains available to page tools and shares the same data with the toolbar popup
 - **Bilingual buttons** — all action buttons show 中文 / English together
 
 ## Install / 安装
@@ -15,7 +17,7 @@ Cross-browser extension (Chrome / Edge / Firefox MV3) with:
 
 1. Open `chrome://extensions` (or `edge://extensions`)
 2. Enable **Developer mode**
-3. **Load unpacked** → select this folder (`网页计时插件`)
+3. **Load unpacked** → select the extracted extension folder containing `manifest.json`
 4. After code updates, click **Reload** on the extension card
 
 ### Firefox
@@ -25,7 +27,7 @@ Cross-browser extension (Chrome / Edge / Firefox MV3) with:
 
 ## Open the extension / 打开扩展
 
-Click the extension icon in the browser toolbar. A panel appears at the **top-right of the webpage** (not a separate popup window).
+Click the extension icon in the browser toolbar. A native extension popup opens, so core tools remain available on new-tab and restricted pages.
 
 - **最小化 / Minimize** — collapses to a small strip; click again to expand
 - Tabs: Timer, Notes, 生词本 (Vocab), 生句本 (Sentences), Settings
@@ -91,7 +93,8 @@ Extension does not run on `chrome://` or `edge://` pages.
 
 | Feature | How |
 |--------|-----|
-| Open panel | Click extension icon → top-right panel |
+| Open panel | Click extension icon → reliable toolbar popup |
+| Literature search | Research tab → choose Scholar / Semantic Scholar / PubMed / arXiv → search |
 | Minimize | **最小化 / Minimize** in panel header |
 | Timer (quick) | Red **Timer / 计时** FAB → set time → Start |
 | Timer (panel) | Panel → Timer tab → Start |
@@ -107,7 +110,7 @@ Extension does not run on `chrome://` or `edge://` pages.
 
 ## Files
 
-- `background/service-worker.js` — icon click, alarms, translate proxy, optional tab close on expire
+- `background/service-worker.js` — alarms, translate proxy, literature-search routing, optional tab close on expire
 - `content/content.js` — selection toolbar, note FAB
 - `content/highlight-persist.js` — per-page highlights, restore, colors
 - `content/timer-ui.js` — timer FAB, dialog, top-right badge

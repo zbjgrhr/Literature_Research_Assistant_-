@@ -6,6 +6,44 @@ importScripts(
 
 const BELL_URL = 'assets/bell.wav';
 const VIEWER_PAGE = 'viewer/reader.html';
+const LITERATURE_SEARCH_URLS = {
+  scholar: (query) => `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`,
+  semantic: (query) =>
+    `https://www.semanticscholar.org/search?q=${encodeURIComponent(query)}&sort=relevance`,
+  pubmed: (query) =>
+    `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(query)}&sort=relevance`,
+  arxiv: (query) =>
+    `https://arxiv.org/search/?query=${encodeURIComponent(query)}&searchtype=all&abstracts=show&order=-announced_date_first&size=50`
+};
+
+async function wtpOpenLiteratureSearch(query, provider = 'scholar') {
+  const normalizedQuery = String(query || '').trim().slice(0, 500);
+  if (!normalizedQuery) throw new Error('Search query is empty');
+  const buildUrl = LITERATURE_SEARCH_URLS[provider] || LITERATURE_SEARCH_URLS.scholar;
+  await browser.tabs.create({ url: buildUrl(normalizedQuery) });
+}
+
+async function wtpInjectContentScripts(tabId) {
+  const manifest = browser.runtime.getManifest();
+  const contentScript = manifest.content_scripts?.find((entry) =>
+    entry.js?.includes('content/content.js')
+  );
+  if (!contentScript?.js?.length) {
+    throw new Error('Content script configuration is missing');
+  }
+
+  if (contentScript.css?.length) {
+    await browser.scripting.insertCSS({
+      target: { tabId },
+      files: contentScript.css
+    });
+  }
+
+  await browser.scripting.executeScript({
+    target: { tabId },
+    files: contentScript.js
+  });
+}
 
 async function wtpOpenViewerTab(query = '') {
   const base = browser.runtime.getURL(VIEWER_PAGE);
@@ -17,7 +55,7 @@ browser.runtime.onInstalled.addListener(() => {
   try {
     browser.contextMenus.create({
       id: 'wtp-open-viewer',
-      title: 'Open local file reader (Study Plugin)',
+      title: 'Open local file reader (Literature Research Assistant)',
       contexts: ['page']
     });
   } catch {
@@ -139,23 +177,20 @@ browser.action.onClicked.addListener(async (tab) => {
   if (!tab?.id) return;
   try {
     await browser.tabs.sendMessage(tab.id, { type: 'TOGGLE_SIDE_PANEL' });
-  } catch {
+  } catch (messageError) {
     try {
-      await browser.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: [
-          'libs/browser-polyfill.min.js',
-          'shared/i18n-ui.js',
-          'shared/panel-app.js',
-          'content/highlight-persist.js',
-          'content/timer-ui.js',
-          'content/side-panel.js',
-          'content/content.js'
-        ]
-      });
+      // A browser extension reload disconnects content scripts from tabs that
+      // were already open. Re-inject the complete manifest-defined bundle so
+      // its dependencies and styles cannot drift from manifest.json.
+      await wtpInjectContentScripts(tab.id);
       await browser.tabs.sendMessage(tab.id, { type: 'TOGGLE_SIDE_PANEL' });
-    } catch {
-      /* restricted page e.g. chrome:// */
+    } catch (injectionError) {
+      console.error('[WTP] Unable to activate the page UI', {
+        tabId: tab.id,
+        url: tab.url,
+        messageError: messageError?.message || String(messageError),
+        injectionError: injectionError?.message || String(injectionError)
+      });
     }
   }
 });
@@ -300,6 +335,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const recent = data.wtpViewerRecent || [];
         const lid = recent[0]?.id;
         await wtpOpenViewerTab(lid ? `?id=${encodeURIComponent(lid)}` : '');
+        return { ok: true };
+      }
+      case 'OPEN_LITERATURE_SEARCH': {
+        await wtpOpenLiteratureSearch(message.query, message.provider);
         return { ok: true };
       }
       case 'OPEN_FLOATING_PANEL': {

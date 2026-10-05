@@ -239,3 +239,117 @@
 #open-options {
   color: #2563eb;
 }
+
+.wtp-research-panel {
+  min-height: 330px;
+  background:
+    linear-gradient(rgba(23, 44, 60, 0.035) 1px, transparent 1px),
+    #f8f5ec;
+  background-size: 100% 24px;
+}
+
+.wtp-research-heading {
+  padding: 2px 2px 12px 12px;
+  border-left: 3px solid #c99742;
+}
+
+.wtp-research-kicker {
+  color: #9b6c23;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.wtp-research-heading h2 {
+  margin: 5px 0 6px;
+  color: #172c3c;
+  font-family: Georgia, 'Noto Serif SC', serif;
+  font-size: 19px;
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+.wtp-research-heading p {
+  margin: 0;
+  color: #5c6870;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.wtp-research-form {
+  padding-top: 10px;
+}
+
+.wtp-research-query-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #344754;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+#literature-query {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #b9b4a7;
+  border-radius: 4px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.86);
+  color: #172c3c;
+  font-size: 12px;
+}
+
+#literature-query:focus {
+  border-color: #b47e2c;
+  box-shadow: 0 0 0 2px rgba(201, 151, 66, 0.18);
+}
+
+.wtp-research-provider-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wtp-research-provider-row label {
+  color: #6b7478;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wtp-research-lenses {
+  display: flex;
+  gap: 5px;
+  margin: 9px 0;
+}
+
+.wtp-panel-body button.wtp-research-lens {
+  padding: 5px 6px !important;
+  border-color: #d6c9ae !important;
+  border-radius: 999px !important;
+  background: #f5ead4 !important;
+  color: #72511c !important;
+  font-size: 9px !important;
+}
+
+.wtp-panel-body button.wtp-research-search {
+  width: 100% !important;
+  border-color: #172c3c !important;
+  background: #172c3c !important;
+  color: #fff9e9 !important;
+  font-weight: 600;
+}
+
+.wtp-research-status {
+  min-height: 15px;
+  margin: 8px 0 0;
+  color: #52705d;
+  font-size: 10px;
+}
+
+.wtp-research-status.is-error {
+  color: #a54132;
+}

@@ -55,13 +55,30 @@ if (manifest.manifest_version !== 3) {
   console.error('Expected manifest_version 3');
   failed++;
 }
-if (manifest.action?.default_popup) {
-  console.error('manifest should not have default_popup (use in-page side panel)');
+if (manifest.action?.default_popup !== 'popup/popup.html') {
+  console.error('manifest action must use popup/popup.html for reliable access');
   failed++;
 }
 if (!manifest.browser_specific_settings?.gecko?.id) {
   console.error('Missing Firefox gecko id');
   failed++;
+}
+
+const manifestFiles = [
+  manifest.background?.service_worker,
+  manifest.action?.default_popup,
+  manifest.options_ui?.page,
+  ...(manifest.content_scripts || []).flatMap((entry) => [
+    ...(entry.js || []),
+    ...(entry.css || [])
+  ]),
+  ...(manifest.web_accessible_resources || []).flatMap((entry) => entry.resources || [])
+].filter(Boolean);
+for (const file of new Set(manifestFiles)) {
+  if (!fs.existsSync(path.join(root, file))) {
+    console.error('manifest references missing file', file);
+    failed++;
+  }
 }
 
 const contentJs = fs.readFileSync(path.join(root, 'content/content.js'), 'utf8');
@@ -86,6 +103,8 @@ const readerHtml = fs.readFileSync(path.join(root, 'viewer/reader.html'), 'utf8'
 const readerBootJs = fs.readFileSync(path.join(root, 'viewer/reader-boot.js'), 'utf8');
 const readerModuleJs = fs.readFileSync(path.join(root, 'viewer/reader-module.js'), 'utf8');
 const optionsHtml = fs.readFileSync(path.join(root, 'options/options.html'), 'utf8');
+const popupHtml = fs.readFileSync(path.join(root, 'popup/popup.html'), 'utf8');
+const popupCss = fs.readFileSync(path.join(root, 'popup/popup.css'), 'utf8');
 
 const checks = [
   ['content', /getActiveRange/, contentJs],
@@ -101,6 +120,8 @@ const checks = [
   ['content', /openSavedFloatingPanel|wtpOpenSavedFloatingPanel/, contentJs],
   ['content', /siteRemarks|openSiteRemarksPanel/, contentJs],
   ['content', /wtp-toolbar-lang-header/, contentJs],
+  ['content', /toolbar\.append\(resultEl\)/, contentJs],
+  ['content', /savedRow\s*\n\s*\)/, contentJs],
   ['content', /wtpNotePanelWidth/, contentJs],
   ['content', /wtpNotePanelTop/, contentJs],
   ['content', /applyHighlightColorFromToolbar/, contentJs],
@@ -127,12 +148,21 @@ const checks = [
   ['timer-ui', /wtp-timer-fab/, timerJs],
   ['timer-ui', /wtp-timer-badge/, timerJs],
   ['timer-ui', /wtp-timer-expired-overlay/, timerJs],
+  ['timer-ui', /extensionContextInvalidated/, timerJs],
+  ['timer-ui', /sendRuntimeMessage/, timerJs],
+  ['timer-ui', /setInterval\([\s\S]*1000\)/, timerJs],
   ['side-panel', /TOGGLE_SIDE_PANEL/, sidePanelJs],
   ['side-panel', /OPEN_SIDE_PANEL_TAB/, sidePanelJs],
   ['side-panel', /wtpOpenSidePanelTab/, sidePanelJs],
   ['side-panel', /attachShadow/, sidePanelJs],
   ['side-panel', /wtp-side-panel-host/, sidePanelJs],
   ['service-worker', /action\.onClicked/, swJs],
+  ['service-worker', /runtime\.getManifest\(\)/, swJs],
+  ['service-worker', /scripting\.insertCSS/, swJs],
+  ['service-worker', /files:\s*contentScript\.js/, swJs],
+  ['service-worker', /Unable to activate the page UI/, swJs],
+  ['service-worker-search', /OPEN_LITERATURE_SEARCH/, swJs],
+  ['service-worker-search', /scholar\.google\.com|semanticscholar\.org|pubmed\.ncbi\.nlm\.nih\.gov|arxiv\.org/, swJs],
   ['service-worker', /OPEN_SIDE_PANEL_TAB/, swJs],
   ['service-worker', /closeTabOnExpire/, swJs],
   ['translate', /wtpDetectSourceLang/, translateJs],
@@ -143,6 +173,13 @@ const checks = [
   ['panel-app', /wtpInitPanelApp/, panelAppJs],
   ['panel-app', /switchToTab/, panelAppJs],
   ['panel-app', /wtpTimerUi/, panelAppJs],
+  ['panel-app-search', /runLiteratureSearch|bindLiteratureSearch/, panelAppJs],
+  ['panel-app-context', /extensionContextInvalidated|sendRuntimeMessage/, panelAppJs],
+  ['popup-search', /panel-research|literature-search-form|literature-query/, popupHtml],
+  ['popup-dependencies', /shared\/list-render\.js[\s\S]*shared\/panel-app\.js/, popupHtml],
+  ['popup-search-css', /research-masthead|research-query-row|research-lens/, popupCss],
+  ['side-panel-search', /panel-research|literature-search-form|literature-query/, sidePanelJs],
+  ['i18n-search', /tabResearch|researchTitle|researchSearch/, i18nJs],
   ['css', /#wtp-toolbar[\s\S]*position:\s*fixed/, contentCss],
   ['css', /wtp-highlight-yellow/, contentCss],
   ['css', /#wtp-note-panel/, contentCss],
@@ -155,6 +192,7 @@ const checks = [
   ['i18n', /clearAllHighlights/, i18nJs],
   ['i18n', /savedVocab/, i18nJs],
   ['css', /wtp-toolbar-saved-row/, contentCss],
+  ['css', /#wtp-translate-result:empty/, contentCss],
   ['floating', /wtpOpenSavedFloatingPanel/, floatJs],
   ['floating', /wtp-float-vocab|wtp-float-mindmaps|createMindMapListPanel/, floatJs],
   ['floating', /wtpCreateTreeMindMapPanel/, floatJs],
@@ -269,6 +307,12 @@ if (/tabs\.remove\s*\(/.test(swJs) && !/closeTabOnExpire/.test(swJs)) {
   failed++;
 }
 
+const panelDirectRuntimeCalls = panelAppJs.match(/browser\.runtime\.sendMessage\s*\(/g) || [];
+if (panelDirectRuntimeCalls.length !== 1) {
+  console.error('panel-app must route runtime messages through sendRuntimeMessage');
+  failed++;
+}
+
 const war = manifest.web_accessible_resources?.[0]?.resources || [];
 if (!war.includes('content/side-panel.css')) {
   console.error('web_accessible_resources missing content/side-panel.css');
@@ -276,6 +320,13 @@ if (!war.includes('content/side-panel.css')) {
 }
 
 const csJs = manifest.content_scripts?.[0]?.js || [];
+const csCss = manifest.content_scripts?.[0]?.css || [];
+for (const [kind, files] of [['JS', csJs], ['CSS', csCss]]) {
+  if (new Set(files).size !== files.length) {
+    console.error(`content_scripts contains duplicate ${kind} files`);
+    failed++;
+  }
+}
 const requiredScripts = [
   'shared/page-key.js',
   'shared/list-render.js',
@@ -292,6 +343,18 @@ for (const s of requiredScripts) {
     console.error('content_scripts missing', s);
     failed++;
   }
+}
+
+for (const s of ['content/content.css', 'content/floating-panels.css']) {
+  if (!csCss.includes(s)) {
+    console.error('content_scripts CSS missing', s);
+    failed++;
+  }
+}
+
+if (/files:\s*\[[\s\S]*content\/content\.js/.test(swJs)) {
+  console.error('service-worker must inject the manifest-defined content script bundle');
+  failed++;
 }
 
 console.log(failed ? `FAILED (${failed} issues)` : 'OK: all required files and feature checks passed');

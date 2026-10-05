@@ -44,13 +44,41 @@
       </div>
       <div class="wtp-panel-body">
         <header class="wtp-tabs">
-          <button type="button" class="wtp-tab active" data-tab="timer" data-i18n-btn="tabTimer">Timer</button>
+          <button type="button" class="wtp-tab active" data-tab="research" data-i18n-btn="tabResearch">Research</button>
+          <button type="button" class="wtp-tab" data-tab="timer" data-i18n-btn="tabTimer">Timer</button>
           <button type="button" class="wtp-tab" data-tab="notes" data-i18n-btn="tabNotes">Notes</button>
           <button type="button" class="wtp-tab" data-tab="vocab" data-i18n-btn="tabVocab">Vocab</button>
           <button type="button" class="wtp-tab" data-tab="sentences" data-i18n-btn="tabSentences">Sentences</button>
           <button type="button" class="wtp-tab" data-tab="settings" data-i18n-btn="tabSettings">Settings</button>
         </header>
-        <section id="panel-timer" class="wtp-panel active">
+        <section id="panel-research" class="wtp-panel wtp-research-panel active">
+          <div class="wtp-research-heading">
+            <span class="wtp-research-kicker" data-i18n="researchEyebrow">LITERATURE FINDER</span>
+            <h2 data-i18n="researchTitle">Find the paper behind the idea.</h2>
+            <p data-i18n="researchIntro">Search scholarly indexes, then bring useful passages back to your notes and mind map.</p>
+          </div>
+          <form id="literature-search-form" class="wtp-research-form">
+            <label class="wtp-research-query-label" for="literature-query" data-i18n="researchQueryLabel">Topic, title, DOI, author, or quoted phrase</label>
+            <input id="literature-query" type="search" autocomplete="off" data-i18n="researchQueryPlaceholder" placeholder="e.g. retrieval augmented generation evaluation" />
+            <div class="wtp-research-provider-row">
+              <label for="literature-provider" data-i18n="researchProvider">Index</label>
+              <select id="literature-provider">
+                <option value="scholar">Google Scholar</option>
+                <option value="semantic">Semantic Scholar</option>
+                <option value="pubmed">PubMed</option>
+                <option value="arxiv">arXiv</option>
+              </select>
+            </div>
+            <div class="wtp-research-lenses">
+              <button type="button" class="wtp-research-lens" data-suffix-en=" systematic review" data-suffix-zh=" 系统综述" data-i18n-btn="researchLensReview">Review</button>
+              <button type="button" class="wtp-research-lens" data-suffix-en=" open access" data-suffix-zh=" 开放获取" data-i18n-btn="researchLensOpen">Open access</button>
+              <button type="button" class="wtp-research-lens" data-suffix-en=" methodology" data-suffix-zh=" 方法论" data-i18n-btn="researchLensMethod">Methods</button>
+            </div>
+            <button type="submit" id="literature-search-submit" class="wtp-research-search" data-i18n-btn="researchSearch">Search papers</button>
+            <p id="literature-search-status" class="wtp-research-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+        <section id="panel-timer" class="wtp-panel">
           <p id="timer-status" class="wtp-status" data-i18n="timerIdle">Set a duration and press Start</p>
           <div class="wtp-countdown" id="countdown">00:00:00</div>
           <div class="wtp-time-inputs">

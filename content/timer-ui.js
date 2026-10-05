@@ -3,6 +3,32 @@
   let expiredOverlay = null;
   let tickInterval = null;
   let lastFlashMinute = null;
+  let extensionContextInvalidated = false;
+
+  function isExtensionContextInvalidated(error) {
+    return /extension context invalidated/i.test(error?.message || String(error || ''));
+  }
+
+  function stopForInvalidatedContext() {
+    extensionContextInvalidated = true;
+    if (tickInterval) {
+      clearInterval(tickInterval);
+      tickInterval = null;
+    }
+  }
+
+  async function sendRuntimeMessage(message) {
+    if (extensionContextInvalidated) return null;
+    try {
+      return await browser.runtime.sendMessage(message);
+    } catch (error) {
+      if (isExtensionContextInvalidated(error)) {
+        stopForInvalidatedContext();
+        return null;
+      }
+      throw error;
+    }
+  }
 
   function btnLabel(key) {
     return typeof wtpBilingual === 'function' ? wtpBilingual(key) : key;
@@ -33,7 +59,8 @@
   }
 
   async function refreshBadge() {
-    const res = await browser.runtime.sendMessage({ type: 'TIMER_GET' });
+    const res = await sendRuntimeMessage({ type: 'TIMER_GET' });
+    if (!res) return;
     const state = res?.state;
     const badge = ensureBadge();
 
@@ -62,9 +89,12 @@
   }
 
   function startBadgeTick() {
+    if (extensionContextInvalidated) return;
     if (tickInterval) clearInterval(tickInterval);
-    tickInterval = setInterval(refreshBadge, 250);
-    refreshBadge();
+    tickInterval = setInterval(() => {
+      refreshBadge().catch((error) => console.error('[WTP] Timer badge refresh failed', error));
+    }, 1000);
+    refreshBadge().catch((error) => console.error('[WTP] Timer badge refresh failed', error));
   }
 
   function ensureExpiredOverlay() {
@@ -161,7 +191,8 @@
     }
 
     async function refreshDialog() {
-      const res = await browser.runtime.sendMessage({ type: 'TIMER_GET' });
+      const res = await sendRuntimeMessage({ type: 'TIMER_GET' });
+      if (!res) return;
       const state = res?.state;
       const cd = $('#wtp-fab-countdown');
       if (!state) {
@@ -203,7 +234,7 @@
 
     $('.fab-start').addEventListener('click', async () => {
       const durationMs = getDurationMs();
-      const res = await browser.runtime.sendMessage({ type: 'TIMER_START', durationMs });
+      const res = await sendRuntimeMessage({ type: 'TIMER_START', durationMs });
       if (!res?.ok) alert(res?.error || 'Failed');
       startBadgeTick();
       refreshDialog();
@@ -211,20 +242,20 @@
     });
 
     $('.fab-pause').addEventListener('click', async () => {
-      const cur = await browser.runtime.sendMessage({ type: 'TIMER_GET' });
+      const cur = await sendRuntimeMessage({ type: 'TIMER_GET' });
       const state = cur?.state;
       if (!state) return;
       if (state.status === 'running') {
-        await browser.runtime.sendMessage({ type: 'TIMER_PAUSE' });
+        await sendRuntimeMessage({ type: 'TIMER_PAUSE' });
       } else if (state.status === 'paused') {
-        await browser.runtime.sendMessage({ type: 'TIMER_RESUME' });
+        await sendRuntimeMessage({ type: 'TIMER_RESUME' });
       }
       refreshDialog();
       refreshBadge();
     });
 
     $('.fab-reset').addEventListener('click', async () => {
-      await browser.runtime.sendMessage({ type: 'TIMER_RESET' });
+      await sendRuntimeMessage({ type: 'TIMER_RESET' });
       refreshDialog();
       refreshBadge();
     });

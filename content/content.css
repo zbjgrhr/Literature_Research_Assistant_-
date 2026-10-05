@@ -147,12 +147,17 @@ mark.wtp-highlight-purple {
 
 #wtp-translate-result {
   width: 100%;
-  margin-top: 4px;
+  margin-bottom: 4px;
   padding: 6px 8px;
   background: #0f172a;
   border-radius: 4px;
   line-height: 1.4;
   word-break: break-word;
+  border-bottom: 1px solid #334155;
+}
+
+#wtp-translate-result:empty {
+  display: none;
 }
 
 #wtp-translate-result.error {

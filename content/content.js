@@ -425,6 +425,10 @@
 
     toolbar.innerHTML = '';
 
+    const resultEl = document.createElement('div');
+    resultEl.id = 'wtp-translate-result';
+    toolbar.append(resultEl);
+
     const colorRow = buildColorPicker();
     if (colorRow.childNodes.length) toolbar.append(colorRow);
 
@@ -502,8 +506,6 @@
     const btnTranslate = document.createElement('button');
     btnTranslate.textContent = btnLabel('translate');
     bindToolbarPreserveSelection(btnTranslate);
-    const resultEl = document.createElement('div');
-    resultEl.id = 'wtp-translate-result';
     btnTranslate.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -570,8 +572,7 @@
       btnSentence,
       btnClear,
       btnRemarks,
-      savedRow,
-      resultEl
+      savedRow
     );
     positionToolbar(rect);
     toolbarInteraction = false;

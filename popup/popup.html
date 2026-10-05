@@ -3,18 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Literature Research Assistant</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
+  <div class="research-masthead">
+    <span class="research-masthead-mark">R</span>
+    <div>
+      <strong data-i18n="researchDesk">Literature Research Assistant</strong>
+      <small data-i18n="researchDeskSubtitle">Read · trace · remember</small>
+    </div>
+  </div>
   <header class="tabs">
-    <button type="button" class="tab active" data-tab="timer" data-i18n-btn="tabTimer">Timer</button>
+    <button type="button" class="tab active" data-tab="research" data-i18n-btn="tabResearch">Research</button>
+    <button type="button" class="tab" data-tab="timer" data-i18n-btn="tabTimer">Timer</button>
     <button type="button" class="tab" data-tab="notes" data-i18n-btn="tabNotes">Notes</button>
     <button type="button" class="tab" data-tab="vocab" data-i18n-btn="tabVocab">Vocab</button>
     <button type="button" class="tab" data-tab="sentences" data-i18n-btn="tabSentences">Sentences</button>
     <button type="button" class="tab" data-tab="settings" data-i18n-btn="tabSettings">Settings</button>
   </header>
 
-  <section id="panel-timer" class="panel active">
+  <section id="panel-research" class="panel research-panel active">
+    <div class="research-heading">
+      <span class="research-kicker" data-i18n="researchEyebrow">LITERATURE FINDER</span>
+      <h1 data-i18n="researchTitle">Find the paper behind the idea.</h1>
+      <p data-i18n="researchIntro">Search scholarly indexes, then bring useful passages back to your notes and mind map.</p>
+    </div>
+    <form id="literature-search-form" class="research-form">
+      <label class="research-query-label" for="literature-query" data-i18n="researchQueryLabel">Topic, title, DOI, author, or quoted phrase</label>
+      <div class="research-query-row">
+        <input id="literature-query" type="search" autocomplete="off" data-i18n="researchQueryPlaceholder" placeholder="e.g. retrieval augmented generation evaluation" />
+        <button type="submit" id="literature-search-submit" class="research-search-button" data-i18n-btn="researchSearch">Search papers</button>
+      </div>
+      <div class="research-provider-row">
+        <label for="literature-provider" data-i18n="researchProvider">Index</label>
+        <select id="literature-provider">
+          <option value="scholar">Google Scholar</option>
+          <option value="semantic">Semantic Scholar</option>
+          <option value="pubmed">PubMed</option>
+          <option value="arxiv">arXiv</option>
+        </select>
+      </div>
+      <div class="research-lenses" aria-label="Search lenses">
+        <button type="button" class="research-lens" data-suffix-en=" systematic review" data-suffix-zh=" 系统综述" data-i18n-btn="researchLensReview">Review</button>
+        <button type="button" class="research-lens" data-suffix-en=" open access" data-suffix-zh=" 开放获取" data-i18n-btn="researchLensOpen">Open access</button>
+        <button type="button" class="research-lens" data-suffix-en=" methodology" data-suffix-zh=" 方法论" data-i18n-btn="researchLensMethod">Methods</button>
+      </div>
+      <p id="literature-search-status" class="research-status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <section id="panel-timer" class="panel">
     <p id="timer-status" class="status" data-i18n="timerIdle">Set a duration and press Start</p>
     <div class="countdown" id="countdown">00:00:00</div>
     <div class="time-inputs">
@@ -82,6 +121,7 @@
 
   <script src="../libs/browser-polyfill.min.js"></script>
   <script src="../shared/i18n-ui.js"></script>
+  <script src="../shared/list-render.js"></script>
   <script src="../shared/panel-app.js"></script>
   <script src="popup.js"></script>
 </body>

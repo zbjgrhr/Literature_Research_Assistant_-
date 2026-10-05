@@ -1,9 +1,31 @@
 function wtpInitPanelApp(root, options = {}) {
   let uiLocale = 'zh';
   let countdownInterval = null;
+  let extensionContextInvalidated = false;
   const inPage = !!options.inPage;
 
   const $ = (id) => root.querySelector(`#${id}`);
+
+  function isExtensionContextInvalidated(error) {
+    return /extension context invalidated/i.test(error?.message || String(error || ''));
+  }
+
+  async function sendRuntimeMessage(message) {
+    if (extensionContextInvalidated) return null;
+    try {
+      return await browser.runtime.sendMessage(message);
+    } catch (error) {
+      if (isExtensionContextInvalidated(error)) {
+        extensionContextInvalidated = true;
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+        return null;
+      }
+      throw error;
+    }
+  }
 
   function formatMs(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));
@@ -39,7 +61,8 @@ function wtpInitPanelApp(root, options = {}) {
   }
 
   async function refreshTimerUi() {
-    const res = await browser.runtime.sendMessage({ type: 'TIMER_GET' });
+    const res = await sendRuntimeMessage({ type: 'TIMER_GET' });
+    if (!res) return;
     const state = res?.state;
     const countdown = $('countdown');
     const btnStart = $('btn-start');
@@ -79,12 +102,16 @@ function wtpInitPanelApp(root, options = {}) {
   }
 
   function startCountdownTick() {
+    if (extensionContextInvalidated) return;
     if (countdownInterval) clearInterval(countdownInterval);
-    countdownInterval = setInterval(refreshTimerUi, 250);
+    countdownInterval = setInterval(() => {
+      refreshTimerUi().catch((error) => console.error('[WTP] Panel timer refresh failed', error));
+    }, 1000);
   }
 
   async function loadSettings() {
-    const res = await browser.runtime.sendMessage({ type: 'GET_SETTINGS' });
+    const res = await sendRuntimeMessage({ type: 'GET_SETTINGS' });
+    if (!res) return;
     const settings = res?.settings || {};
     uiLocale = settings.uiLocale || 'zh';
     if ($('ui-locale')) $('ui-locale').value = uiLocale;
@@ -95,7 +122,7 @@ function wtpInitPanelApp(root, options = {}) {
       prov.textContent = `${s.currentProvider}: ${providerLabel(settings.provider || 'free')}`;
     }
     wtpApplyI18n(root, uiLocale);
-    const timerRes = await browser.runtime.sendMessage({ type: 'TIMER_GET' });
+    const timerRes = await sendRuntimeMessage({ type: 'TIMER_GET' });
     if ($('btn-pause')) {
       $('btn-pause').textContent =
         timerRes?.state?.status === 'paused' ? wtpBilingual('resume') : wtpBilingual('pause');
@@ -127,6 +154,13 @@ function wtpInitPanelApp(root, options = {}) {
     if (tabName === 'notes') loadNotes();
     if (tabName === 'vocab') loadStudyList('vocab');
     if (tabName === 'sentences') loadStudyList('sentences');
+    if (tabName === 'research' && inPage) {
+      const queryInput = $('literature-query');
+      const selection = window.getSelection?.().toString().trim();
+      if (queryInput && !queryInput.value && selection && selection.length <= 500) {
+        queryInput.value = selection;
+      }
+    }
   }
 
   function switchToTab(tabName) {
@@ -191,7 +225,7 @@ function wtpInitPanelApp(root, options = {}) {
       openUrl(item.url);
     });
     li.querySelector('.del-btn').addEventListener('click', async () => {
-      await browser.runtime.sendMessage({ type: deleteType, id: item.id });
+      await sendRuntimeMessage({ type: deleteType, id: item.id });
       loadStudyList(deleteType === 'DELETE_VOCAB' ? 'vocab' : 'sentences');
     });
     return li;
@@ -210,7 +244,7 @@ function wtpInitPanelApp(root, options = {}) {
     const emptyEl = $(emptyId);
     if (!list) return;
 
-    const res = await browser.runtime.sendMessage({ type: getType });
+    const res = await sendRuntimeMessage({ type: getType });
     const items = res?.items || [];
     const filter = filterEl?.value || '';
     const s = wtpGetStrings(uiLocale);
@@ -243,7 +277,7 @@ function wtpInitPanelApp(root, options = {}) {
   }
 
   async function loadNotes() {
-    const res = await browser.runtime.sendMessage({ type: 'GET_NOTES' });
+    const res = await sendRuntimeMessage({ type: 'GET_NOTES' });
     const notes = res?.notes || [];
     const filterEl = $('label-filter');
     const list = $('notes-list');
@@ -302,17 +336,68 @@ function wtpInitPanelApp(root, options = {}) {
         openUrl(note.url);
       });
       li.querySelector('.del-btn').addEventListener('click', async () => {
-        await browser.runtime.sendMessage({ type: 'DELETE_NOTE', id: note.id });
+        await sendRuntimeMessage({ type: 'DELETE_NOTE', id: note.id });
         loadNotes();
       });
       list.appendChild(li);
     });
   }
 
+  function setResearchStatus(key, isError = false) {
+    const status = $('literature-search-status');
+    if (!status) return;
+    const strings = wtpGetStrings(uiLocale);
+    status.textContent = key ? strings[key] || key : '';
+    status.classList.toggle('is-error', isError);
+  }
+
+  async function runLiteratureSearch() {
+    const queryInput = $('literature-query');
+    const providerSelect = $('literature-provider');
+    const query = queryInput?.value.trim() || '';
+    if (!query) {
+      setResearchStatus('researchEmpty', true);
+      queryInput?.focus();
+      return;
+    }
+
+    setResearchStatus('researchOpening');
+    try {
+      const result = await sendRuntimeMessage({
+        type: 'OPEN_LITERATURE_SEARCH',
+        query,
+        provider: providerSelect?.value || 'scholar'
+      });
+      if (!result?.ok) throw new Error(result?.error || 'Search failed');
+      setResearchStatus('researchOpened');
+    } catch (error) {
+      console.error('[WTP] Literature search failed', error);
+      setResearchStatus('researchOpenFailed', true);
+    }
+  }
+
+  function bindLiteratureSearch() {
+    $('literature-search-form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      runLiteratureSearch();
+    });
+
+    root.querySelectorAll('.research-lens, .wtp-research-lens').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = $('literature-query');
+        if (!input) return;
+        const suffix = uiLocale === 'zh' ? button.dataset.suffixZh : button.dataset.suffixEn;
+        if (suffix && !input.value.includes(suffix.trim())) input.value += suffix;
+        input.focus();
+        setResearchStatus('');
+      });
+    });
+  }
+
   function bindEvents() {
     $('btn-start')?.addEventListener('click', async () => {
       const durationMs = getDurationMs();
-      const res = await browser.runtime.sendMessage({ type: 'TIMER_START', durationMs });
+      const res = await sendRuntimeMessage({ type: 'TIMER_START', durationMs });
       if (!res?.ok) alert(res?.error || 'Failed');
       startCountdownTick();
       refreshTimerUi();
@@ -320,20 +405,20 @@ function wtpInitPanelApp(root, options = {}) {
     });
 
     $('btn-pause')?.addEventListener('click', async () => {
-      const cur = await browser.runtime.sendMessage({ type: 'TIMER_GET' });
+      const cur = await sendRuntimeMessage({ type: 'TIMER_GET' });
       const state = cur?.state;
       if (!state) return;
       if (state.status === 'running') {
-        await browser.runtime.sendMessage({ type: 'TIMER_PAUSE' });
+        await sendRuntimeMessage({ type: 'TIMER_PAUSE' });
       } else if (state.status === 'paused') {
-        await browser.runtime.sendMessage({ type: 'TIMER_RESUME' });
+        await sendRuntimeMessage({ type: 'TIMER_RESUME' });
       }
       refreshTimerUi();
       notifyTimer();
     });
 
     $('btn-reset')?.addEventListener('click', async () => {
-      await browser.runtime.sendMessage({ type: 'TIMER_RESET' });
+      await sendRuntimeMessage({ type: 'TIMER_RESET' });
       refreshTimerUi();
       notifyTimer();
     });
@@ -347,7 +432,7 @@ function wtpInitPanelApp(root, options = {}) {
       const tab = tabs[0];
       if (!tab?.id) return;
       try {
-        await browser.runtime.sendMessage({ type: 'OPEN_NOTE_MODAL', tabId: tab.id });
+        await sendRuntimeMessage({ type: 'OPEN_NOTE_MODAL', tabId: tab.id });
         if (!inPage) window.close();
       } catch (e) {
         alert(e.message || String(e));
@@ -360,7 +445,7 @@ function wtpInitPanelApp(root, options = {}) {
 
     $('ui-locale')?.addEventListener('change', async () => {
       uiLocale = $('ui-locale').value;
-      await browser.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: 'SAVE_SETTINGS',
         settings: { uiLocale }
       });
@@ -372,7 +457,7 @@ function wtpInitPanelApp(root, options = {}) {
     });
 
     $('target-lang')?.addEventListener('change', async () => {
-      await browser.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: 'SAVE_SETTINGS',
         settings: { targetLang: $('target-lang').value }
       });
@@ -394,6 +479,7 @@ function wtpInitPanelApp(root, options = {}) {
 
   fillLangSelect();
   setupTabs();
+  bindLiteratureSearch();
   bindEvents();
   loadSettings().then(() => {
     refreshTimerUi();
