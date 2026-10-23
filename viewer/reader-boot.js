@@ -61,6 +61,7 @@
   }
 
   async function renderBlob(blob, meta) {
+    globalThis.wtpViewerDocumentReady = false;
     const engine = await ensureEngine();
     if (!engine) {
       setStatus(label('viewerOpenFailed'), true);
@@ -87,6 +88,8 @@
       } else {
         throw new Error('UNSUPPORTED');
       }
+      globalThis.wtpViewerDocumentReady = true;
+      await globalThis.wtpHighlight?.restoreHighlights();
     } catch (e) {
       console.warn('[wtp viewer]', e);
       showDocument(false);
@@ -106,6 +109,7 @@
       setStatus(label('viewerUnsupported'), true);
       return;
     }
+    globalThis.wtpViewerDocumentReady = false;
     const { stableId, pageKey } = await applyPageKeyForFile(file);
     currentId = stableId;
     try {
@@ -117,6 +121,10 @@
       }
       throw e;
     }
+    if (new URLSearchParams(location.search).has('url')) {
+      location.href = '?id=' + encodeURIComponent(stableId);
+      return;
+    }
     await renderBlob(file, { name: file.name, typeKind: kind });
     await refreshRecent();
     history.replaceState(null, '', `?id=${encodeURIComponent(stableId)}`);
@@ -124,6 +132,11 @@
 
   async function openById(id) {
     if (!id) return;
+    if (new URLSearchParams(location.search).has('url')) {
+      location.href = '?id=' + encodeURIComponent(id);
+      return;
+    }
+    globalThis.wtpViewerDocumentReady = false;
     const list = await wtpViewerGetRecentMeta();
     const meta = list.find((x) => x.id === id);
     if (!meta) {
@@ -191,13 +204,44 @@
     }
   }
 
+  async function openOnlinePdf(value) {
+    try {
+      const url = wtpNormalizePdfUrl(value);
+      // A document gets its own reader tab, so existing panels and in-flight
+      // renders cannot save annotations against a newly selected document.
+      if (new URLSearchParams(location.search).get('url') !== url) {
+        location.href = '?url=' + encodeURIComponent(url);
+        return;
+      }
+      document.getElementById('wtp-online-pdf-url').value = url;
+      setStatus(label('onlinePdfLoading'));
+      const blob = await wtpFetchOnlinePdf(url);
+      globalThis.wtpViewerPageKeyOverride = url.split('#')[0];
+      const source = new URL(url);
+      let name = source.pathname.split('/').pop() || source.hostname;
+      try { name = decodeURIComponent(name); } catch { /* use encoded filename */ }
+      document.title = name + ' — ' + label('viewerTitle');
+      if (els.title) els.title.textContent = name;
+      await renderBlob(blob, { name, typeKind: 'pdf' });
+    } catch (error) {
+      showDocument(false);
+      setStatus(label(error.message === 'PDF_TOO_LARGE' ? 'onlinePdfTooLarge' : 'onlinePdfFailed') + ' (' + error.message + ')', true);
+    }
+  }
+
   async function init() {
     await loadLocale();
     bindDrop();
+    document.getElementById('wtp-online-pdf-form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      openOnlinePdf(document.getElementById('wtp-online-pdf-url').value);
+    });
     await refreshRecent();
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
-    if (id) await openById(id);
+    const url = params.get('url');
+    if (url) await openOnlinePdf(url);
+    else if (id) await openById(id);
   }
 
   globalThis.wtpViewerOpenFile = openFile;

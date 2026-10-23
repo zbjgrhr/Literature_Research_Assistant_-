@@ -178,3 +178,23 @@ body.wtp-viewer-page {
 .wtp-viewer-status.hidden {
   display: none;
 }
+
+.wtp-online-pdf-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; background: #e2e8f0; }
+.wtp-online-pdf-form input { flex: 1; min-width: 240px; padding: 8px; }
+.wtp-online-pdf-form button { padding: 8px 12px; cursor: pointer; }
+.wtp-pdf-page { width: fit-content; }
+.wtp-pdf-page .textLayer { --scale-factor: 1.25; --user-unit: 1; --total-scale-factor: calc(var(--scale-factor) * var(--user-unit)); }
+.wtp-pdf-page .textLayer br { position: absolute; color: transparent; }
+.wtp-pdf-page .textLayer ::selection { background: rgba(37, 99, 235, 0.3); }
+
+/* PDF.js 6 positions and sizes selectable glyphs through CSS variables. */
+.wtp-pdf-page .textLayer { text-size-adjust: none; forced-color-adjust: none; }
+.wtp-pdf-page .textLayer > span {
+  font-size: calc(var(--total-scale-factor) * var(--font-height));
+  transform: rotate(var(--rotate, 0deg)) scaleX(var(--scale-x, 1));
+}
+.wtp-pdf-page .textLayer mark { font-size: inherit; color: transparent; }
+
+/* Blend highlight colors with the rendered glyphs instead of covering them. */
+.wtp-pdf-page { isolation: isolate; }
+.wtp-pdf-page .textLayer { mix-blend-mode: multiply; }

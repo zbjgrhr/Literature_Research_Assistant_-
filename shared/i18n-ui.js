@@ -1,5 +1,12 @@
 const WTP_STRINGS = {
   en: {
+    openCurrentPdf: "Read current web PDF",
+    openOnlinePdf: "Open online PDF",
+    onlinePdfUrl: "Online PDF URL",
+    onlinePdfHint: "Open a PDF tab here to use selection, translation, highlights and notes. You can also paste a PDF URL in the reader.",
+    onlinePdfLoading: "Loading online PDF…",
+    onlinePdfFailed: "Could not open this PDF. Check the URL or website login; you can also download it and open the local file.",
+    onlinePdfTooLarge: "PDF exceeds the 50 MB online reading limit.",
     tabResearch: 'Research',
     tabTimer: 'Timer',
     tabNotes: 'Notes',
@@ -213,6 +220,13 @@ const WTP_STRINGS = {
     sourceAuto: 'Auto-detect'
   },
   zh: {
+    openCurrentPdf: "阅读当前网页 PDF",
+    openOnlinePdf: "打开在线 PDF",
+    onlinePdfUrl: "在线 PDF 链接",
+    onlinePdfHint: "在 PDF 标签页点击上方按钮，即可使用划词、翻译、高亮和笔记。也可在阅读器中粘贴 PDF 链接。",
+    onlinePdfLoading: "正在加载在线 PDF…",
+    onlinePdfFailed: "无法打开 PDF，请检查链接或网站登录状态；也可下载后用“打开本地文件”导入。",
+    onlinePdfTooLarge: "在线 PDF 超过 50 MB 大小限制。",
     tabResearch: '文献',
     tabTimer: '计时',
     tabNotes: '笔记',

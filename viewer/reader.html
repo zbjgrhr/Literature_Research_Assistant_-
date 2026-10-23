@@ -15,6 +15,12 @@
     <button type="button" id="wtp-btn-pick-file" class="primary" data-i18n-btn="openLocalFile">Open local file</button>
     <input type="file" id="wtp-file-input" accept=".pdf,.docx,.html,.htm,.txt,application/pdf,text/html,text/plain" hidden />
   </header>
+
+    <form id="wtp-online-pdf-form" class="wtp-online-pdf-form wtp-viewer-chrome">
+      <label for="wtp-online-pdf-url" data-i18n="onlinePdfUrl">Online PDF URL</label>
+      <input id="wtp-online-pdf-url" type="url" required placeholder="https://example.org/paper.pdf" />
+      <button type="submit" data-i18n-btn="openOnlinePdf">Open online PDF</button>
+    </form>
   <p id="wtp-viewer-status" class="wtp-viewer-status hidden" role="status"></p>
   <div class="wtp-viewer-layout">
     <aside class="wtp-viewer-sidebar wtp-viewer-chrome">
@@ -29,6 +35,7 @@
     </main>
   </div>
 
+  <script src="../shared/online-pdf.js"></script>
   <script src="reader-init.js"></script>
   <script src="../libs/browser-polyfill.min.js"></script>
   <script src="../shared/page-key.js"></script>

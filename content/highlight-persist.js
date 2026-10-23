@@ -225,7 +225,7 @@
   }
 
   async function restoreHighlights() {
-    if (applying) return;
+    if (applying || (globalThis.wtpViewerMode && !globalThis.wtpViewerDocumentReady)) return;
     const items = await loadAllForPage();
     const remaining = [];
     for (const item of items) {

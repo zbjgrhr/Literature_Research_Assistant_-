@@ -1,3 +1,14 @@
+document.getElementById('btn-open-current-pdf')?.addEventListener('click', async () => {
+  const status = document.getElementById('online-pdf-status');
+  try {
+    const result = await browser.runtime.sendMessage({ type: 'OPEN_ONLINE_PDF' });
+    if (!result?.ok) throw new Error(result?.error || 'Unable to open PDF');
+    window.close();
+  } catch (error) {
+    status.textContent = wtpBilingual('onlinePdfFailed') + ' (' + error.message + ')';
+  }
+});
+
 document.getElementById('btn-open-viewer')?.addEventListener('click', async () => {
   try {
     await browser.runtime.sendMessage({ type: 'OPEN_VIEWER' });

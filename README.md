@@ -144,3 +144,17 @@ No `npm install` required — this project has no `package.json`.
 ## Privacy
 
 Translation requests go to the provider you choose. Notes, vocab, sentences, highlights, and settings stay in the browser (`chrome.storage` / `browser.storage`).
+
+
+### 在线 / 网页 PDF（v1.2.2）
+
+在 Edge / Chrome 打开在线 PDF 后，点击扩展图标，再点击 **阅读当前网页 PDF**。
+扩展会在新标签页用内置 PDF.js 加载原始链接，可使用划词翻译、高亮、笔记和思维导图。
+阅读器顶部也可直接粘贴 HTTP(S) PDF 链接；支持没有 .pdf 后缀的下载地址。
+高亮和思维导图按原始 URL（保留查询参数、去除页码 hash）保存，刷新同一阅读器可恢复。
+在线 PDF 不缓存文件本体，重新打开需要联网，最大 50 MB。扫描 PDF 仍需先 OCR。
+浏览器内置 PDF 阅读器限制脚本注入，因此需要通过上述入口进入扩展阅读器。
+需登录的网站可能限制跨站请求；失败时会显示提示，可下载后通过“打开本地文件”导入。
+保留本地 v1.2.1 的划词搜索工具改进。
+
+Validation: node scripts/verify-extension.js and node --test scripts/online-pdf.test.js.

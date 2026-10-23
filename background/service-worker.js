@@ -1,7 +1,8 @@
 importScripts(
   '../libs/browser-polyfill.min.js',
   '../shared/storage.js',
-  '../shared/translate.js'
+  '../shared/translate.js',
+  '../shared/online-pdf.js'
 );
 
 const BELL_URL = 'assets/bell.wav';
@@ -321,6 +322,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case 'DELETE_SAVED_MINDMAP': {
         await wtpDeleteSavedMindMap(message.id || message.snapshotId || '');
         return { ok: true, items: await wtpGetSavedMindMaps() };
+      }
+      case 'OPEN_ONLINE_PDF': {
+        const tab = message.url ? null : await wtpGetActiveTab();
+        const url = wtpNormalizePdfUrl(message.url || tab?.url);
+        await wtpOpenViewerTab('?url=' + encodeURIComponent(url));
+        return { ok: true };
       }
       case 'OPEN_VIEWER':
         await wtpOpenViewerTab('');

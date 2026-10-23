@@ -164,6 +164,66 @@ mark.wtp-highlight-purple {
   color: #fca5a5;
 }
 
+.wtp-literature-search {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 5px;
+  margin-bottom: 1px;
+  border-bottom: 1px solid #334155;
+}
+
+.wtp-literature-query {
+  flex: 1 1 160px;
+  min-width: 112px;
+  max-width: 250px;
+  height: 26px;
+  padding: 3px 7px;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  background: #0f172a;
+  color: #f8fafc;
+  font: 11px/1.2 system-ui, sans-serif;
+  outline: none;
+}
+
+.wtp-literature-query:focus {
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 1px #38bdf8;
+}
+
+.wtp-literature-query::placeholder {
+  color: #64748b;
+}
+
+.wtp-literature-provider {
+  width: 78px;
+  height: 26px;
+  padding: 2px 4px;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: 10px/1.2 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+#wtp-toolbar .wtp-literature-submit {
+  height: 26px;
+  padding: 3px 7px;
+  background: #0e7490;
+}
+
+#wtp-toolbar .wtp-literature-submit:hover {
+  background: #0891b2;
+}
+
+#wtp-toolbar .wtp-literature-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .wtp-toolbar-lang-header {
   width: 100%;
   font-size: 11px;

@@ -25,6 +25,7 @@ const required = [
   'shared/translate.js',
   'shared/i18n-ui.js',
   'shared/page-key.js',
+  'shared/online-pdf.js',
   'shared/viewer-storage.js',
   'shared/panel-app.js',
   'viewer/reader.html',

@@ -26,6 +26,8 @@ async function renderPdfToContainer(arrayBuffer, container) {
 
     const textLayerDiv = document.createElement('div');
     textLayerDiv.className = 'textLayer';
+    textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
+    textLayerDiv.style.setProperty('--user-unit', viewport.userUnit || 1);
     pageWrap.appendChild(textLayerDiv);
     container.appendChild(pageWrap);
 

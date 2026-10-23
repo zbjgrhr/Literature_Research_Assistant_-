@@ -8,6 +8,7 @@
   let toolbarInteraction = false;
   let toastTimer = null;
   const TOOLBAR_LANG_KEY = 'wtpToolbarTranslateLang';
+  const LITERATURE_PROVIDER_KEY = 'wtpLiteratureProvider';
 
   function getToolbarTranslateLang() {
     try {
@@ -23,6 +24,22 @@
       TOOLBAR_LANG_KEY,
       JSON.stringify({ sourceLang, targetLang })
     );
+  }
+
+  function getLiteratureProvider() {
+    try {
+      return sessionStorage.getItem(LITERATURE_PROVIDER_KEY) || 'scholar';
+    } catch {
+      return 'scholar';
+    }
+  }
+
+  function saveLiteratureProvider(provider) {
+    try {
+      sessionStorage.setItem(LITERATURE_PROVIDER_KEY, provider);
+    } catch {
+      /* session storage can be unavailable on restricted pages */
+    }
   }
 
   async function loadSettings() {
@@ -256,7 +273,7 @@
   }
 
   const WTP_EXTENSION_UI =
-    '#wtp-toolbar,#wtp-toast,#wtp-note-panel,#wtp-side-panel-host,#wtp-timer-fab,#wtp-timer-badge,#wtp-timer-expired-overlay,#wtp-study-save-overlay,.wtp-float-panel,.wtp-mind-wrap,.wtp-mind-toolbar,.wtp-mind-style-bar,.wtp-mind-hint,.wtp-mind-canvas,.wtp-mind-context,.wtp-mind-tree-node,.wtp-viewer-header,.wtp-viewer-sidebar,#wtp-reader-drop-zone';
+    '#wtp-toolbar,#wtp-toast,#wtp-note-panel,#wtp-side-panel-host,#wtp-timer-fab,#wtp-timer-badge,#wtp-timer-expired-overlay,#wtp-study-save-overlay,.wtp-float-panel,.wtp-mind-wrap,.wtp-mind-toolbar,.wtp-mind-style-bar,.wtp-mind-hint,.wtp-mind-canvas,.wtp-mind-context,.wtp-mind-tree-node,.wtp-viewer-header,.wtp-online-pdf-form,.wtp-viewer-sidebar,#wtp-reader-drop-zone';
 
   function isExtensionUi(target) {
     if (!target?.closest) return false;
@@ -388,6 +405,75 @@
     return row;
   }
 
+  function buildLiteratureSearch(text) {
+    const s = strings();
+    const form = document.createElement('form');
+    form.className = 'wtp-literature-search';
+    form.setAttribute('role', 'search');
+
+    const input = document.createElement('input');
+    input.type = 'search';
+    input.className = 'wtp-literature-query';
+    input.value = String(text || '').slice(0, 500);
+    input.placeholder = s.researchQueryPlaceholder || 'Title, DOI, author, or topic';
+    input.setAttribute('aria-label', s.researchQueryLabel || 'Literature search query');
+    input.autocomplete = 'off';
+
+    const provider = document.createElement('select');
+    provider.className = 'wtp-literature-provider';
+    provider.setAttribute('aria-label', s.researchProvider || 'Index');
+    [
+      ['scholar', 'Scholar'],
+      ['semantic', 'Semantic'],
+      ['pubmed', 'PubMed'],
+      ['arxiv', 'arXiv']
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      provider.appendChild(option);
+    });
+    provider.value = getLiteratureProvider();
+    provider.addEventListener('change', () => saveLiteratureProvider(provider.value));
+
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'wtp-literature-submit';
+    submit.textContent = s.researchSearch || 'Search papers';
+    bindToolbarPreserveSelection(submit);
+    bindToolbarFormFocus(input);
+    bindToolbarFormFocus(provider);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toolbarInteraction = true;
+      const query = input.value.trim();
+      if (!query) {
+        showToolbarError(s.researchEmpty || 'Enter a search query.');
+        input.focus();
+        return;
+      }
+      submit.disabled = true;
+      try {
+        const result = await browser.runtime.sendMessage({
+          type: 'OPEN_LITERATURE_SEARCH',
+          query,
+          provider: provider.value
+        });
+        if (!result?.ok) throw new Error(result?.error || s.researchOpenFailed);
+        showToast(s.researchOpened || 'Search opened in a new tab.');
+      } catch (error) {
+        showToolbarError(error.message || s.researchOpenFailed || 'Search failed.');
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    form.append(input, provider, submit);
+    return form;
+  }
+
   function showToolbar() {
     if (isMindMapPanelOpen()) return;
     loadSettings();
@@ -428,6 +514,8 @@
     const resultEl = document.createElement('div');
     resultEl.id = 'wtp-translate-result';
     toolbar.append(resultEl);
+
+    toolbar.append(buildLiteratureSearch(text));
 
     const colorRow = buildColorPicker();
     if (colorRow.childNodes.length) toolbar.append(colorRow);
@@ -938,7 +1026,7 @@
         type: 'ADD_NOTE',
         label: document.getElementById('wtp-note-label').value,
         body: document.getElementById('wtp-note-note-text').value,
-        url: location.href,
+        url: globalThis.wtpViewerMode && /^https?:/.test(wtpPageKey()) ? wtpPageKey() : location.href,
         title: document.title
       });
       if (res?.ok) {
@@ -1009,7 +1097,7 @@
         translation: document.getElementById('wtp-study-translation').value,
         label: document.getElementById('wtp-study-label').value,
         remark: document.getElementById('wtp-study-remark').value,
-        url: location.href,
+        url: globalThis.wtpViewerMode && /^https?:/.test(wtpPageKey()) ? wtpPageKey() : location.href,
         title: document.title
       });
       if (res?.ok) {
