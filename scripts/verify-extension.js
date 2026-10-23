@@ -6,6 +6,7 @@ const required = [
   'manifest.json',
   'libs/browser-polyfill.min.js',
   'background/service-worker.js',
+  'background/pdf-navigation.js',
   'popup/popup.html',
   'popup/popup.js',
   'options/options.html',

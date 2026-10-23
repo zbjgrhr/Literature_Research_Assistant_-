@@ -158,3 +158,10 @@ Translation requests go to the provider you choose. Notes, vocab, sentences, hig
 保留本地 v1.2.1 的划词搜索工具改进。
 
 Validation: node scripts/verify-extension.js and node --test scripts/online-pdf.test.js.
+
+### v1.2.3：自动打开网页 PDF
+
+打开在线 PDF 会自动在当前标签页切换到扩展阅读器，无需再点弹窗按钮。
+通过顶层请求的 application/pdf 响应头识别无后缀 PDF；扩展重新加载时也会接管已有 .pdf 标签页。
+新增 webRequest 权限用于识别 PDF 响应，不使用阻塞请求权限。普通网页和嵌入式 PDF 不自动切换。
+更新后请在扩展管理页重新加载，并确认版本为 1.2.3。

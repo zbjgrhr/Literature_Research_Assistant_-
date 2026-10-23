@@ -2,7 +2,8 @@ importScripts(
   '../libs/browser-polyfill.min.js',
   '../shared/storage.js',
   '../shared/translate.js',
-  '../shared/online-pdf.js'
+  '../shared/online-pdf.js',
+  'pdf-navigation.js'
 );
 
 const BELL_URL = 'assets/bell.wav';

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "description": "__MSG_extDescription__",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "default_locale": "en",
   "permissions": [
     "alarms",
@@ -11,9 +11,12 @@
     "activeTab",
     "scripting",
     "notifications",
-    "contextMenus"
+    "contextMenus",
+    "webRequest"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "background/service-worker.js"
   },
@@ -38,7 +41,9 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "<all_urls>"
+      ],
       "js": [
         "libs/browser-polyfill.min.js",
         "shared/page-key.js",
@@ -53,7 +58,10 @@
         "content/floating-panels.js",
         "content/content.js"
       ],
-      "css": ["content/content.css", "content/floating-panels.css"],
+      "css": [
+        "content/content.css",
+        "content/floating-panels.css"
+      ],
       "run_at": "document_idle",
       "all_frames": false
     }
@@ -68,7 +76,9 @@
         "libs/pdfjs/pdf.worker.min.mjs",
         "viewer/reader.css"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "browser_specific_settings": {
